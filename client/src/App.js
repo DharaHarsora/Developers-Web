@@ -1,25 +1,105 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { Component } from "react";
+import "./App.css";
+import Footer from "./components/layout/Footer";
+import Landing from "./components/layout/Landing";
+import Navbar from "./components/layout/Navbar";
+import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
+import { Provider } from "react-redux";
+import store from "./store";
+import jwt_decode from "jwt-decode";
+import setAuthToken from "./utils/setAuthToken";
+import { logoutUser, setCurrentUser } from "./actions/authActions";
+import { clearCurrentProfile } from "./actions/profileActions";
+import Register from "./components/auth/Register";
+import Login from "./components/auth/Login";
+import Dashboard from "./components/dashboard/Dashboard";
+import CreateProfile from "./components/create-profile/CreateProfile";
+import EditProfile from "./components/edit-profile/EditProfile";
+import PrivateRoute from "./components/common/PrivateRoute";
+import AddExperience from "./components/add-credentials/AddExperience";
+import AddEducation from "./components/add-credentials/AddEducation";
+import Profiles from "./components/profiles/Profiles";
+import Profile from "./components/profile/Profile";
+import NotFound from "./components/notfound/NotFound";
+import Posts from "./components/posts/Posts";
+import Post from "./components/post/Post";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+// package.json
+
+// "start": "react-scripts start",
+// "build": "react-scripts build",
+
+// check for user token
+if (localStorage.jwtToken) {
+  // set AuthToken Header
+  setAuthToken(localStorage.jwtToken);
+  // decode the token and get the user
+  const decoded = jwt_decode(localStorage.jwtToken);
+  // set the user
+  store.dispatch(setCurrentUser(decoded));
+
+  //check for expired token
+  const currtime = Date.now() / 1000;
+
+  if (decoded.exp < currtime) {
+    // logout user
+    store.dispatch(logoutUser());
+    // clear current profile
+    store.dispatch(clearCurrentProfile());
+    // redirect to login page
+    window.location.href = "/login";
+  }
+}
+
+class App extends Component {
+  render() {
+    return (
+      <Provider store={store}>
+        <Router>
+          {" "}
+          <div className='App'>
+            <Navbar />
+            <Route exact path='/' component={Landing} />
+            <div className='container'>
+              <Route exact path='/register' component={Register} />
+              <Route exact path='/login' component={Login} />
+              <Route exact path='/profiles' component={Profiles} />
+              <Route exact path='/profile/:handle' component={Profile} />
+              {/* Home: a public route that everyone can access to. */}
+              {/* Dashboard: a private route that only authenticated user can access to */}
+              <Switch>
+                <PrivateRoute exact path='/dashboard' component={Dashboard} />
+                <PrivateRoute
+                  exact
+                  path='/create-profile'
+                  component={CreateProfile}
+                />
+                <PrivateRoute
+                  exact
+                  path='/edit-profile'
+                  component={EditProfile}
+                />
+                <PrivateRoute
+                  exact
+                  path='/add-experience'
+                  component={AddExperience}
+                />
+                <PrivateRoute
+                  exact
+                  path='/add-education'
+                  component={AddEducation}
+                />
+                <PrivateRoute exact path='/feed' component={Posts} />
+                <PrivateRoute exact path='/post/:id' component={Post} />
+              </Switch>
+              <Route exact path='/not-found' component={NotFound} />
+            </div>
+            <Footer />
+          </div>
+        </Router>
+      </Provider>
+    );
+  }
 }
 
 export default App;
